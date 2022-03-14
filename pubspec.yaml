@@ -41,7 +41,14 @@ dev_dependencies:
 
   aes_crypt_null_safe: ^2.0.2
   path_provider: ^2.0.9
+  hive: ^2.0.6
   hive_flutter: ^1.1.0
+  flutter_bloc: ^8.0.1
+  equatable: ^2.0.3
+
+  io_extends:
+    git:
+      url: https://github.com/i-panov/dart_io_extends.git
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
