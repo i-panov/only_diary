@@ -6,9 +6,13 @@ import 'package:only_diary/models/diary_entry.dart';
 class DiaryStorage {
   static const signature = 'only_diary';
 
+  final DateTime updatedAt;
   final List<DiaryEntry> entries;
 
-  DiaryStorage({required this.entries});
+  DiaryStorage({
+    required this.updatedAt,
+    required this.entries,
+  });
 
   static Future<DiaryStorage> load({
     required String path,
@@ -21,9 +25,10 @@ class DiaryStorage {
       throw FormatException('invalid format', path, 0);
     }
 
+    final updatedAt = reader.readDateTime();
     final count = reader.readUint32();
     final entries = Iterable.generate(count, (_) => DiaryEntry.read(reader)).toList();
-    return DiaryStorage(entries: entries);
+    return DiaryStorage(updatedAt: updatedAt, entries: entries);
   }
 
   Future<void> save({
@@ -38,6 +43,7 @@ class DiaryStorage {
   Uint8List serialize() {
     final writer = MemoryWriter();
     writer.writeString(signature);
+    writer.writeDateTime(updatedAt);
     writer.writeUint32(entries.length);
     entries.forEach((e) => e.write(writer));
     return writer.bytes;
