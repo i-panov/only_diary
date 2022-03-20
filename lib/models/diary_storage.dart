@@ -6,10 +6,11 @@ import 'package:only_diary/models/diary_entry.dart';
 class DiaryStorage {
   static const signature = 'only_diary';
 
+  final _DiaryMetaInfo _metaInfo;
   final DateTime updatedAt;
   final List<DiaryEntry> entries;
 
-  DiaryStorage({
+  DiaryStorage._(this._metaInfo, {
     required this.updatedAt,
     required this.entries,
   });
@@ -18,29 +19,22 @@ class DiaryStorage {
     required String path,
     required String password,
   }) async {
-    final crypt = AesCrypt(password);
-    final reader = MemoryReader(await crypt.decryptDataFromFile(path));
+    final metaInfo = _DiaryMetaInfo(path: path, password: password);
+    final reader = MemoryReader(await metaInfo.decrypt());
 
     if (reader.readString(signature.length) != signature) {
-      throw FormatException('invalid format', path, 0);
+      throw FormatException('invalid signature', path, 0);
     }
 
     final updatedAt = reader.readDateTime();
     final count = reader.readUint32();
     final entries = Iterable.generate(count, (_) => DiaryEntry.read(reader)).toList();
-    return DiaryStorage(updatedAt: updatedAt, entries: entries);
+    return DiaryStorage._(metaInfo, updatedAt: updatedAt, entries: entries);
   }
 
-  Future<void> save({
-    required String path,
-    required String password,
-  }) async {
-    final crypt = AesCrypt(password);
-    crypt.setOverwriteMode(AesCryptOwMode.on);
-    await crypt.encryptDataToFile(serialize(), path);
-  }
+  Future<void> save() => _metaInfo.encrypt(_serialize());
 
-  Uint8List serialize() {
+  Uint8List _serialize() {
     final writer = MemoryWriter();
     writer.writeString(signature);
     writer.writeDateTime(updatedAt);
@@ -48,4 +42,20 @@ class DiaryStorage {
     entries.forEach((e) => e.write(writer));
     return writer.bytes;
   }
+}
+
+class _DiaryMetaInfo {
+  final String path;
+  final AesCrypt crypt;
+
+  _DiaryMetaInfo({
+    required this.path,
+    required String password,
+  }): crypt = AesCrypt(password) {
+    crypt.setOverwriteMode(AesCryptOwMode.on);
+  }
+
+  Future<Uint8List> decrypt() => crypt.decryptDataFromFile(path);
+
+  Future<String> encrypt(Uint8List data) => crypt.encryptDataToFile(data, path);
 }
