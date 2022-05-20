@@ -1,25 +1,34 @@
+import 'package:collection/collection.dart';
+import 'package:flutter/material.dart';
 import 'dart:typed_data';
 import 'package:io_extends/io_extends.dart';
 import 'package:aes_crypt_null_safe/aes_crypt_null_safe.dart';
+import 'package:only_diary/extensions/datetime_extensions.dart';
 import 'package:only_diary/models/diary_entry.dart';
 
 class DiaryStorage {
   static const signature = 'only_diary';
 
-  final _DiaryMetaInfo _metaInfo;
-  final DateTime updatedAt;
-  final List<DiaryEntry> entries;
+  final DiaryMetaInfo metaInfo;
 
-  DiaryStorage._(this._metaInfo, {
-    required this.updatedAt,
-    required this.entries,
-  });
+  DateTime _updatedAt;
+  DateTime get updatedAt => _updatedAt;
+
+  final List<DiaryEntry> _entries;
+  UnmodifiableListView get entries => UnmodifiableListView(_entries);
+
+  DiaryEntry? get todayEntry => _entries.firstWhereOrNull((e) => DateUtils.isSameDay(e.date, DateTime.now()));
+
+  DiaryStorage._(this.metaInfo, {
+    required DateTime updatedAt,
+    required List<DiaryEntry> entries,
+  }): _updatedAt = updatedAt, _entries = entries;
 
   static Future<DiaryStorage> load({
     required String path,
     required String password,
   }) async {
-    final metaInfo = _DiaryMetaInfo(path: path, password: password);
+    final metaInfo = DiaryMetaInfo(path: path, password: password);
     final reader = MemoryReader(await metaInfo.decrypt());
 
     if (reader.readString(signature.length) != signature) {
@@ -32,7 +41,22 @@ class DiaryStorage {
     return DiaryStorage._(metaInfo, updatedAt: updatedAt, entries: entries);
   }
 
-  Future<void> save() => _metaInfo.encrypt(_serialize());
+  Future<void> setEntry(DiaryEntry entry) async {
+    if (entry.date.isAfter(DateTime.now().tomorrow.date)) {
+      throw ArgumentError.value(entry.date, 'entry.date', 'Entry in future');
+    }
+
+    if (DateUtils.isSameDay(entry.date, DateTime.now())) {
+      final _todayEntry = todayEntry;
+    }
+
+    // todo: поиск и обновление записи, либо добавление сегодняшней записи
+
+    _updatedAt = DateTime.now();
+    await metaInfo.encrypt(_serialize());;
+  }
+
+  // Future<void> save() => metaInfo.encrypt(_serialize());
 
   Uint8List _serialize() {
     final writer = MemoryWriter();
@@ -44,18 +68,18 @@ class DiaryStorage {
   }
 }
 
-class _DiaryMetaInfo {
+class DiaryMetaInfo {
   final String path;
-  final AesCrypt crypt;
+  final AesCrypt _crypt;
 
-  _DiaryMetaInfo({
+  DiaryMetaInfo({
     required this.path,
     required String password,
-  }): crypt = AesCrypt(password) {
-    crypt.setOverwriteMode(AesCryptOwMode.on);
+  }): _crypt = AesCrypt(password) {
+    _crypt.setOverwriteMode(AesCryptOwMode.on);
   }
 
-  Future<Uint8List> decrypt() => crypt.decryptDataFromFile(path);
+  Future<Uint8List> decrypt() => _crypt.decryptDataFromFile(path);
 
-  Future<String> encrypt(Uint8List data) => crypt.encryptDataToFile(data, path);
+  Future<String> encrypt(Uint8List data) => _crypt.encryptDataToFile(data, path);
 }
