@@ -6,7 +6,7 @@ import 'package:path_provider/path_provider.dart';
 class LockScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    getApplicationDocumentsDirectory().then((v) => print(v));
+    //getApplicationDocumentsDirectory().then((v) => print(v));
 
     return Scaffold(
       body: Padding(
@@ -15,21 +15,6 @@ class LockScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             TextFormField(
-              decoration: InputDecoration(
-                label: Text('Файл'),
-                prefixIcon: IconButton(
-                  icon: Icon(Icons.file_open),
-                  onPressed: () {
-                    FilePicker.platform.pickFiles(
-                      type: FileType.custom,
-                      allowedExtensions: [appExt],
-                    );
-                  },
-                ),
-              ),
-            ),
-            SizedBox(height: 20),
-            TextFormField(
               obscureText: true,
               decoration: InputDecoration(
                 label: Text('Пароль'),
@@ -37,12 +22,36 @@ class LockScreen extends StatelessWidget {
                   icon: Icon(Icons.remove_red_eye),
                   onPressed: () {},
                 ),
+                suffixIcon: IconButton(
+                  icon: Icon(Icons.lock_open),
+                  tooltip: 'Открыть дневник',
+                  onPressed: () {},
+                ),
               ),
             ),
             SizedBox(height: 20),
-            ElevatedButton(
-              child: Text('Сохранить'),
-              onPressed: () {},
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                ElevatedButton(
+                  child: Text('Выбрать другой дневник'),
+                  onPressed: () {
+                    FilePicker.platform.pickFiles(
+                      type: FileType.custom,
+                      allowedExtensions: [appExt],
+                    );
+                  },
+                ),
+                ElevatedButton(
+                  child: Text('Создать новый дневник'),
+                  onPressed: () {
+                    FilePicker.platform.saveFile(
+                      type: FileType.custom,
+                      allowedExtensions: [appExt],
+                    );
+                  },
+                ),
+              ],
             ),
           ],
         ),
