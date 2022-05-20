@@ -1,12 +1,12 @@
 import 'package:io_extends/io_extends.dart';
 
 class DiaryEntry {
-  final DateTime time;
+  final DateTime date;
   final int mood;
   final String text;
 
   DiaryEntry({
-    required this.time,
+    required this.date,
     required this.mood,
     required this.text,
   }) {
@@ -16,13 +16,13 @@ class DiaryEntry {
   }
 
   factory DiaryEntry.read(Reader reader) => DiaryEntry(
-    time: reader.readDateTime(),
+    date: reader.readDateTime(),
     mood: reader.readUint8(),
     text: reader.readString(reader.readUint32()),
   );
 
   void write(Writer writer) => writer
-    ..writeDateTime(time)
+    ..writeDateTime(date)
     ..writeUint8(mood)
     ..writeUint32(text.length)
     ..writeString(text);
