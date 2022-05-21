@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'dart:typed_data';
 import 'package:io_extends/io_extends.dart';
 import 'package:aes_crypt_null_safe/aes_crypt_null_safe.dart';
-import 'package:only_diary/extensions/datetime_extensions.dart';
 import 'package:only_diary/models/diary_entry.dart';
 
 class DiaryStorage {
@@ -17,7 +16,12 @@ class DiaryStorage {
   final List<DiaryEntry> _entries;
   UnmodifiableListView get entries => UnmodifiableListView(_entries);
 
-  DiaryEntry? get todayEntry => _entries.firstWhereOrNull((e) => DateUtils.isSameDay(e.date, DateTime.now()));
+  int get todayEntryIndex => _entries.indexWhere((e) => DateUtils.isSameDay(e.date, DateTime.now()));
+
+  DiaryEntry? get todayEntry {
+    final index = todayEntryIndex;
+    return index < 0 ? null : _entries[index];
+  }
 
   DiaryStorage._(this.metaInfo, {
     required DateTime updatedAt,
@@ -41,22 +45,31 @@ class DiaryStorage {
     return DiaryStorage._(metaInfo, updatedAt: updatedAt, entries: entries);
   }
 
-  Future<void> setEntry(DiaryEntry entry) async {
-    if (entry.date.isAfter(DateTime.now().tomorrow.date)) {
-      throw ArgumentError.value(entry.date, 'entry.date', 'Entry in future');
+  /// Редактировать можно только текущий день.
+  /// Если для него не создана запись то она автоматически создастся.
+  Future<void> setCurrentDay({required int mood, required String text}) async {
+    final entry = new DiaryEntry(date: DateTime.now(), mood: mood, text: text);
+    final index = todayEntryIndex;
+
+    if (index < 0) {
+      _entries.add(entry);
+    } else {
+      _entries[index] = entry;
     }
 
-    if (DateUtils.isSameDay(entry.date, DateTime.now())) {
-      final _todayEntry = todayEntry;
-    }
-
-    // todo: поиск и обновление записи, либо добавление сегодняшней записи
-
-    _updatedAt = DateTime.now();
-    await metaInfo.encrypt(_serialize());;
+    await save();
   }
 
-  // Future<void> save() => metaInfo.encrypt(_serialize());
+  /// Можно удалить любую запись по дню.
+  Future<void> removeEntry(DateTime date) async {
+    _entries.removeWhere((e) => DateUtils.isSameDay(e.date, date));
+    await save();
+  }
+
+  Future<void> save() async {
+    _updatedAt = DateTime.now();
+    await metaInfo.encrypt(_serialize());
+  }
 
   Uint8List _serialize() {
     final writer = MemoryWriter();

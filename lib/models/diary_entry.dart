@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:io_extends/io_extends.dart';
 
 class DiaryEntry {
@@ -7,13 +8,9 @@ class DiaryEntry {
 
   DiaryEntry({
     required this.date,
-    required this.mood,
+    required int mood,
     required this.text,
-  }) {
-    if (mood < 0 || mood > 10) {
-      throw ArgumentError.value(mood, 'mood');
-    }
-  }
+  }): mood = max(min(mood, 10), 0);
 
   factory DiaryEntry.read(Reader reader) => DiaryEntry(
     date: reader.readDateTime(),
