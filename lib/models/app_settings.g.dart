@@ -17,8 +17,8 @@ class AppSettingsAdapter extends TypeAdapter<AppSettings> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return AppSettings(
-      lastPath: fields[0] as String,
-      synchronizations: (fields[1] as Map).cast<String, DateTime>(),
+      lastPath: fields[0] as String?,
+      synchronizations: (fields[1] as Map?)?.cast<ProviderType, DateTime>(),
     );
   }
 

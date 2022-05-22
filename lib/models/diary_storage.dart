@@ -48,7 +48,7 @@ class DiaryStorage {
   /// Редактировать можно только текущий день.
   /// Если для него не создана запись то она автоматически создастся.
   Future<void> setCurrentDay({required int mood, required String text}) async {
-    final entry = new DiaryEntry(date: DateTime.now(), mood: mood, text: text);
+    final entry = DiaryEntry(date: DateTime.now(), mood: mood, text: text);
     final index = todayEntryIndex;
 
     if (index < 0) {
